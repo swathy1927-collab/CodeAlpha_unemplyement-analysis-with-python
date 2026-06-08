@@ -1,0 +1,106 @@
+# Unemployment Analysis in India using Python
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+# -----------------------------
+# 1. LOAD DATASET
+# -----------------------------
+df = pd.read_csv("Unemployment_Rate_upto_11_2020.csv")
+
+print("First 5 rows:")
+print(df.head())
+
+# -----------------------------
+# 2. CLEAN DATA
+# -----------------------------
+df.columns = df.columns.str.strip()
+df["Date"] = pd.to_datetime(df["Date"])
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+# -----------------------------
+# 3. STATE-WISE ANALYSIS
+# -----------------------------
+state_avg = df.groupby("Region")["Estimated Unemployment Rate (%)"].mean().sort_values(ascending=False)
+
+print("\nState-wise Unemployment Rate:")
+print(state_avg)
+
+plt.figure(figsize=(12,6))
+state_avg.head(10).plot(kind="bar", color="red")
+plt.title("Top 10 States with Highest Unemployment Rate")
+plt.ylabel("Unemployment Rate (%)")
+plt.show()
+
+# -----------------------------
+# 4. URBAN vs RURAL ANALYSIS
+# -----------------------------
+area_avg = df.groupby("Area")["Estimated Unemployment Rate (%)"].mean()
+
+print("\nArea-wise Unemployment:")
+print(area_avg)
+
+plt.figure(figsize=(6,4))
+area_avg.plot(kind="bar", color="green")
+plt.title("Urban vs Rural Unemployment")
+plt.ylabel("Rate (%)")
+plt.show()
+
+# -----------------------------
+# 5. TIME TREND ANALYSIS
+# -----------------------------
+plt.figure(figsize=(12,6))
+sns.lineplot(x="Date", y="Estimated Unemployment Rate (%)", data=df)
+plt.title("Unemployment Trend Over Time")
+plt.xticks(rotation=45)
+plt.show()
+
+# -----------------------------
+# 6. MACHINE LEARNING MODEL
+# -----------------------------
+
+# Convert categorical data
+df_ml = df.copy()
+
+if "Area" in df_ml.columns:
+    df_ml["Area"] = df_ml["Area"].map({"Urban":1, "Rural":0})
+
+# Drop missing values
+df_ml = df_ml.dropna()
+
+# Features and target
+X = df_ml[["Estimated Employed", "Estimated Labour Participation Rate (%)"]]
+y = df_ml["Estimated Unemployment Rate (%)"]
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Prediction
+y_pred = model.predict(X_test)
+
+# Evaluation
+print("\nModel Performance:")
+print("Mean Squared Error:", mean_squared_error(y_test, y_pred))
+print("R2 Score:", r2_score(y_test, y_pred))
+
+# -----------------------------
+# 7. SAMPLE PREDICTION
+# -----------------------------
+sample = [[3000000, 45]]
+prediction = model.predict(sample)
+
+print("\nPredicted Unemployment Rate:", prediction[0])
